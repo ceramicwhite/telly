@@ -1,18 +1,6 @@
 #!/usr/bin/with-contenv bash
 source /etc/env
 
-# Download version 1.1
-
-wget -q https://github.com/tellytv/telly/raw/docker/files/telly-11-latest-amd64 -O /usr/bin/telly
-
-# Add ffmpeg file & cleanup /tmp
-
-wget -q https://johnvansickle.com/ffmpeg/releases/ffmpeg-release-amd64-static.tar.xz -P /tmp
-
-tar -xf /tmp/ffmpeg-release-amd64-static.tar.xz  --no-anchored --strip-components=1 -C /usr/bin/ 'ffmpeg' 
-
-rm /tmp/ffmpeg-release-amd64-static.tar.xz && rm /tmp/s6-overlay-amd64.tar.gz
-
 # Make sure folders exist
 
 mkdir -p /config
@@ -22,50 +10,60 @@ mkdir -p /etc/telly
 
 adduser --disabled-login --no-create-home --gecos "" telly > /dev/null 2>&1
 
-# Handling FFMPEG variable for config file
-
-if [ "$FFMPEG" == "true" ]; then FFMPEG="FFMpeg = true"; fi
-
 # Create config file if persist flag is not set or file doesn't exist already
 
 if [ ! -f /config/telly.config.toml ] || [ -z "$PERSISTENCE" ]; then
 
 cat << EOF > /config/telly.config.toml
-[Discovery]                                   
-  Device-Auth = "telly123"                    
-  Device-ID = 12345678                        
-  Device-UUID = ""
-  Device-Firmware-Name = "hdhomeruntc_atsc"
-  Device-Firmware-Version = "20150826"
-  Device-Friendly-Name = "telly"
-  Device-Manufacturer = "Silicondust"
-  Device-Model-Number = "HDTC-2US"
-  SSDP = true
+[Discovery]
+  Device-Auth = "${DEVICE_AUTH:-telly123}"
+  Device-ID = "${DEVICE_ID:-12345678}"
+  Device-UUID = "${DEVICE_UUID:-}"
+  Device-Firmware-Name = "${DEVICE_FIRMWARE_NAME:-hdhomeruntc_atsc}"
+  Device-Firmware-Version = "${DEVICE_FIRMWARE_VERSION:-20150826}"
+  Device-Friendly-Name = "${DEVICE_FRIENDLY_NAME:-telly}"
+  Device-Manufacturer = "${DEVICE_MANUFACTURER:-Silicondust}"
+  Device-Model-Number = "${DEVICE_MODEL_NUMBER:-HDTC-2US}"
+  SSDP = "${SSDP:-true}"
 
 [IPTV]
-  Streams = $STREAMS               
-  Starting-Channel = 10000 
-  XMLTV-Channels = true     
-  ${FFMPEG:+"$FFMPEG"}              
+  Streams = "${STREAMS:-1}"
+  Starting-Channel = "${STARTING_CHANNEL:-10000}"
+  XMLTV-Channels = "${XMLTV_CHANNELS:-true}"
+  FFMpeg = "${FFMPEG:-true}"
 
 [Log]
-  Level = "info"            
-  Requests = true           
+  Level = "${LOG_LEVEL:-info}"
+  Requests = "${LOG_REQUESTS:-true}"
 
 [Web]
-  Base-Address = "$BASE"  
-  Listen-Address = "0.0.0.0:6077" 
+  Base-Address = "${BASE_ADDRESS:-0.0.0.0:6077}"
+  Listen-Address = "${LISTEN_ADDRESS:-0.0.0.0:6077}"
+
+[SchedulesDirect]
+  Username = "${SCHEDULES_DIRECT_USERNAME:-}"
+  Password = "${SCHEDULES_DIRECT_PASSWORD:-}"
 
 [[Source]]
-  Provider = "Custom"
-  M3U = "$M3U"  
-  EPG = "$EPG"       
-  Filter = "${FILTER:+"$FILTER"}"
-  FilterKey = "group-title" 
-  FilterRaw = false        
-  Sort = "group-title"     
+  Name = "${SOURCE1_NAME:-}"
+  Provider = "${SOURCE1_PROVIDER:-Vaders}"
+  Username = "${SOURCE1_USERNAME:-}"
+  Password = "${SOURCE1_PASSWORD:-}"
+  Filter = "${SOURCE1_FILTER:-Sports|Premium Movies|United States.*|USA}"
+  FilterKey = "${SOURCE1_FILTER_KEY:-tvg-name}"
+  FilterRaw = "${SOURCE1_FILTER_RAW:-false}"
+  Sort = "${SOURCE1_SORT:-group-title}"
 
-# Documentation at: https://github.com/tellytv/telly/wiki/Running-Telly%3A-Config-File 
+[[Source]]
+  Name = "${SOURCE2_NAME:-}"
+  Provider = "${SOURCE2_PROVIDER:-IPTV-EPG}"
+  Username = "${SOURCE2_USERNAME:-M3U-Identifier}"
+  Password = "${SOURCE2_PASSWORD:-XML-Identifier}"
+
+[[Source]]
+  Provider = "${SOURCE3_PROVIDER:-Custom}"
+  M3U = "${SOURCE3_M3U:-http://myprovider.com/playlist.m3u}"
+  EPG = "${SOURCE3_EPG:-http://myprovider.com/epg.xml}" 
 EOF
 
 fi

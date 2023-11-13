@@ -1,0 +1,49 @@
+[Discovery]
+  Device-Auth = "${DEVICE_AUTH:-telly123}"
+  Device-ID = "${DEVICE_ID:-12345678}"
+  Device-UUID = "${DEVICE_UUID:-}"
+  Device-Firmware-Name = "${DEVICE_FIRMWARE_NAME:-hdhomeruntc_atsc}"
+  Device-Firmware-Version = "${DEVICE_FIRMWARE_VERSION:-20150826}"
+  Device-Friendly-Name = "${DEVICE_FRIENDLY_NAME:-telly}"
+  Device-Manufacturer = "${DEVICE_MANUFACTURER:-Silicondust}"
+  Device-Model-Number = "${DEVICE_MODEL_NUMBER:-HDTC-2US}"
+  SSDP = "${SSDP:-true}"
+
+[IPTV]
+  Streams = "${STREAMS:-1}"
+  Starting-Channel = "${STARTING_CHANNEL:-10000}"
+  XMLTV-Channels = "${XMLTV_CHANNELS:-true}"
+  FFMpeg = "${FFMPEG:-true}"
+
+[Log]
+  Level = "${LOG_LEVEL:-info}"
+  Requests = "${LOG_REQUESTS:-true}"
+
+[Web]
+  Base-Address = "${BASE_ADDRESS:-0.0.0.0:6077}"
+  Listen-Address = "${LISTEN_ADDRESS:-0.0.0.0:6077}"
+
+[SchedulesDirect]
+  Username = "${SCHEDULES_DIRECT_USERNAME:-}"
+  Password = "${SCHEDULES_DIRECT_PASSWORD:-}"
+
+[[Source]]
+  Name = "${SOURCE1_NAME:-}"
+  Provider = "${SOURCE1_PROVIDER:-Vaders}"
+  Username = "${SOURCE1_USERNAME:-}"
+  Password = "${SOURCE1_PASSWORD:-}"
+  Filter = "${SOURCE1_FILTER:-Sports|Premium Movies|United States.*|USA}"
+  FilterKey = "${SOURCE1_FILTER_KEY:-tvg-name}"
+  FilterRaw = "${SOURCE1_FILTER_RAW:-false}"
+  Sort = "${SOURCE1_SORT:-group-title}"
+
+[[Source]]
+  Name = "${SOURCE2_NAME:-}"
+  Provider = "${SOURCE2_PROVIDER:-IPTV-EPG}"
+  Username = "${SOURCE2_USERNAME:-M3U-Identifier}"
+  Password = "${SOURCE2_PASSWORD:-XML-Identifier}"
+
+[[Source]]
+  Provider = "${SOURCE3_PROVIDER:-Custom}"
+  M3U = "${SOURCE3_M3U:-http://myprovider.com/playlist.m3u}"
+  EPG = "${SOURCE3_EPG:-http://myprovider.com/epg.xml}"

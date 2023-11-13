@@ -1,0 +1,9 @@
+*.m3u
+build/*
+.DS_Store
+/.GOPATH
+/bin
+*.xml
+vendor/
+compose.yml
+Dockerfile*
