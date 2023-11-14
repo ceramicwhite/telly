@@ -2,96 +2,58 @@
 
 A IPTV proxy for Plex Live written in Golang
 
-A docker create template for *nix systems (see [here for OS X and Windows)](https://github.com/tellytv/telly/blob/docker/README.md#os-x-and-windows):
-
 ```
-docker create --rm \
-           --name telly \
-           -p 6077:6077 \
-           -e PUID=1010 \
-           -e PGID=1010 \
-           -e STREAMS=1 \
-           -e M3U=http://url.com/epg.xml \
-           -e EPG=http://url.com/epg.xml \
-           -e BASE=127.0.0.1:6077 \
-           -e FILTERS="THIS|THAT|THEOTHER" \
-           -e FFMPEG=true \
-           -v /etc/localtime:/etc/localtime:ro \
-           -v /opt/telly:/config \
-           tellytv/telly:docker
+services:
+  telly:
+    image: ceramicwhite/telly:latest
+    restart: unless-stopped
+    container_name: telly
+    volumes:
+      - './data:/config'
+      - '/etc/localtime:/etc/localtime:ro'
+      - './data/logs:/var/log/telly'
+    environment:
+      - 'STREAMS=1'                                                  # Number of simultaneous streams that the telly virtual DVR will be able to provide
+      - 'FFMPEG=true'                                                # If true, streams are buffered through ffmpeg; ffmpeg must be on your $PATH
+      - 'LOG_REQUESTS=true'                                          # Log HTTP requests made to telly
+      - 'BASE_ADDRESS=0.0.0.0:6077'                                  # IP address of the machine telly runs on
+      - 'LISTEN_ADDRESS=0.0.0.0:6077'                                # This can stay as-is
+      - 'PGID=1010'                                                  # Group ID for the process
+      - 'PUID=1010'                                                  # User ID for the process
+      ####### Only one of the following SOURCES should be set #########
+                  #### Source 1 ####
+      # - 'SOURCE1_NAME='                                            # Optional name for logging purposes
+      # - 'SOURCE1_PROVIDER=Vaders'                                  # Provider name for the first source
+      # - 'SOURCE1_USERNAME='                                        # Username for the first source
+      # - 'SOURCE1_PASSWORD='                                        # Password for the first source
+      # - 'SOURCE1_FILTER=Sports|Premium Movies|United States.*|USA' # Filter for the first source
+      # - 'SOURCE1_FILTER_KEY=tvg-name'                              # Filter key for the first source
+      # - 'SOURCE1_FILTER_RAW=false'                                 # If true, applies regex filter to entire line
+      # - 'SOURCE1_SORT=group-title'                                 # Sort key for the first source
+      #             #### Source 2 ####
+      # - 'SOURCE2_NAME='                                            # Name for the second source
+      # - 'SOURCE2_PROVIDER=IPTV-EPG'                                # Provider name for the second source
+      # - 'SOURCE2_USERNAME=M3U-Identifier'                          # Username for the second source
+      # - 'SOURCE2_PASSWORD=XML-Identifier'                          # Password for the second source
+                  #### Source 3 ####
+      - 'SOURCE3_PROVIDER=Custom'                                    # Provider name for the third source
+      - 'SOURCE3_M3U=http://myprovider.com/playlist.m3u'             # M3U URL for the third source
+      - 'SOURCE3_EPG=http://myprovider.com/epg.xml'                  # EPG URL for the third source
+      #### Optional ####
+      - 'DEVICE_AUTH=telly123'                                       # Device authentication for Plex
+      - 'DEVICE_ID=12345678'                                         # Device ID for Plex
+      - 'DEVICE_UUID='                                               # Device UUID (optional)
+      - 'DEVICE_FIRMWARE_NAME=hdhomeruntc_atsc'                      # Device firmware name
+      - 'DEVICE_FIRMWARE_VERSION=20150826'                           # Device firmware version
+      - 'DEVICE_FRIENDLY_NAME=telly'                                 # Friendly name of the device
+      - 'DEVICE_MANUFACTURER=Silicondust'                            # Device manufacturer
+      - 'DEVICE_MODEL_NUMBER=HDTC-2US'                               # Device model number
+      - 'SSDP=true'                                                  # Enable or disable SSDP
+      - 'STARTING_CHANNEL=10000'                                     # Starting channel number for telly
+      - 'XMLTV_CHANNELS=true'                                        # If true, uses channel numbers from M3U file
+      - 'LOG_LEVEL=info'                                             # Log level [debug, info, warn, error, fatal]
+      - 'SCHEDULES_DIRECT_USERNAME='                                 # Schedules Direct account username
+      - 'SCHEDULES_DIRECT_PASSWORD='                                 # Schedules Direct account password
+    ports:
+      - '6077:6077'
 ```
-## Parameters
-
-* `-e PGID` for GroupID
-* `-e PUID` for UserID 
-* `-e STREAMS` - Number of simultaneous streams allowed by your IPTV provider
-* `-e M3U` - Link provided by your IPTV provider or a [full path to a file](https://github.com/tellytv/telly/blob/docker/README.md#path-of-m3u-and-epg-files)
-* `-e EPG` - Link provided by your IPTV provider or a [full path to a file](https://github.com/tellytv/telly/blob/docker/README.md#path-of-m3u-and-epg-files)
-* `-e BASE` - IP address or domain that Plex will use to connect to telly (must be reachable by plex)
-* `-e FILTER` - A regular expression [or "regex"] that will include entries from the input M3U to get it below 420 channels.  The filter shown above WILL NOT WORK.
-* `-e FFMPEG` - Enable FFMPEG to improve plex playback, optional variable, don't use it to turn it off
-* `-e PERSISTENCE` - If you need to customize your configuration file for some reason [see here](https://github.com/tellytv/telly#customizing-the-configuration-file)
-* `-v /opt/telly:/config` - Directory where configuration files are stored
-* `-v /etc/localtime:/etc/localtime:ro` - Sync time with host
-* `-p *:*` - Ports used, only change the left ports.
-
-**When editing `-v` and `-p` paremeters, the host is always the left and the docker the right. Only change the left**
-
-For shell access while the container is running do `docker exec -it telly bash`.
-To retrieve telly version while the container is running do `docker exec -it telly telly --version`
-
-## Setting up the application 
-
-If you have done everything correctly you should see output similar to this with `docker logs telly`
-
-```
-time="2019-04-02T04:03:23Z" level=info msg="Loaded 3 channels into the lineup from "
-time="2019-04-02T04:03:23Z" level=info msg="telly is live and on the air!"
-time="2019-04-02T04:03:23Z" level=info msg="Broadcasting from http://0.0.0.0:6077/"
-time="2019-04-02T04:03:23Z" level=info msg="EPG URL: http://0.0.0.0:6077/epg.xml"
-```
-
-If you see this, proceed to [Adding Telly to Plex](https://github.com/tellytv/telly/wiki/Adding-Telly-to-Plex) if not check your variables.
-
-#### Path of M3U and EPG files
-
-If you decide to use a file instead of a URL, you need to start your path with `/config`.
-Example: With `-v /opt/telly:/config` your m3u file should be inside `/opt/telly` in your host and your M3U variable should be `-e M3U=/config/file.m3u`
-
-#### OS X and Windows
-
-Windows and OS X platforms do not have `/etc/localtime` to retrieve timezone information, so you need to add a `-e TZ=Europe/Amsterdam` variable to your docker command and remove `-v /etc/localtime:/etc/localtime:ro \`.  Of course, the variable you add should reflect your desired time zone if it is not `Europe/Amsterdam`.
-
-[List of Time Zones here](https://timezonedb.com/time-zones)
-
-#### Customizing the configuration file 
-
-The docker command above will overwrite your config file if one exists.  If you have edited the configuration file directly for some reason and do not want that to happen use the variable `-e PERSISTENCE=true` so the file won't be overwritten. 
-
-Information on the content of the config file [here](https://github.com/tellytv/telly/wiki/Running-Telly%3A-Config-File)
-
-# How to contribute
-
-1. Clone the branch with `git clone -b docker https://github.com/tellytv/telly`
-2. Go inside the created directory and build the new docker with `docker build -t telly_dev .`
-3. Run it with :
-```
-docker create --rm \
-           --name dev1 \
-           -p 6069:6077 \
-           -e PUID=1000 \
-           -e PGID=1000 \
-           -e STREAMS=1 \
-           -e M3U=/config/iptv.m3u \
-           -e EPG=/config/epg.xml \
-           -e BASE=127.0.0.1:6077 \
-           -e FILTERS="THIS|THAT|THEOTHER" \
-           -v /etc/localtime:/etc/localtime:ro \
-           -v /opt/telly:/config \
-           telly_dev
-```
-5. Run it with `docker start dev1`
-6. Test your features
-7. Pull 
-
-OBS: Don't forget to change the ports, folders and --name and clean up the folders if you rebuild the docker after changing stuff
