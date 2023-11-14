@@ -1,0 +1,3 @@
+if { mkdir -p /var/log/telly }
+if { chown nobody:nogroup /var/log/telly }
+chmod 02755 /var/log/telly

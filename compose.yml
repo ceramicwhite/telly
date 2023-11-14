@@ -6,6 +6,7 @@ services:
     volumes:
       - './data:/config'
       - '/etc/localtime:/etc/localtime:ro'
+      - './data/logs:/var/log/telly'
     environment:
       - 'STREAMS=1' # Number of simultaneous streams that the telly virtual DVR will be able to provide
       - 'FFMPEG=true' # If true, streams are buffered through ffmpeg; ffmpeg must be on your $PATH

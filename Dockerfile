@@ -4,21 +4,27 @@ ARG TELLY_VERSION=v1.5.0
 ARG S6_OVERLAY_VERSION=v3.1.6.0
 
 # First stage: build the Go package
-FROM --platform=$BUILDPLATFORM golang:1.10.8-stretch as builder
+FROM golang:1.10.8-stretch as builder
 
 ARG TARGETPLATFORM
 ARG TELLY_VERSION
+ARG TARGETARCH
 
 RUN echo "deb http://archive.debian.org/debian-security stretch/updates main" > /etc/apt/sources.list
 
 # Install dependencies and tools needed to build `dep` from source if not on amd64
 RUN if [ "$TARGETPLATFORM" != "linux/amd64" ]; then \
-        apt-get update && apt-get install -y --no-install-recommends gcc libc6-dev git && \
-        go get -d -v github.com/golang/dep/cmd/dep && \
-        cd $(go env GOPATH)/src/github.com/golang/dep/cmd/dep && \
-        go build -o /usr/bin/dep; \
+        apt-get update && \
+        apt-get install -y \
+            gcc \
+            libc6-dev \
+            git \
+        && \
+            go get -d -v github.com/golang/dep/cmd/dep && \
+            cd $(go env GOPATH)/src/github.com/golang/dep/cmd/dep && \
+            GOARCH=$TARGETARCH go build -o /usr/bin/dep; \
     else \
-         wget --output-document /usr/bin/dep https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-amd64 && \
+         wget --output-document /usr/bin/dep https://github.com/golang/dep/releases/download/v0.5.0/dep-linux-$TARGETARCH && \
         chmod +x /usr/bin/dep; \
     fi
 
@@ -35,7 +41,7 @@ ADD https://github.com/tellytv/telly.git#${TELLY_VERSION} .
 RUN dep ensure --vendor-only
 
 # Build the Go package
-RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix nocgo -o /telly .
+RUN CGO_ENABLED=1 GOOS=linux GOARCH=$TARGETARCH go build -a -installsuffix nocgo -o /telly .
 
 # Second stage: setup the runtime environment
 FROM debian:bookworm-slim
@@ -69,11 +75,18 @@ RUN apt-get update && \
         S6_OVERLAY_SHA_URL="${S6_OVERLAY_URL}.sha256" && \
         wget $S6_OVERLAY_SHA_URL -O /tmp/${FILENAME}.sha256 && \
         wget $S6_OVERLAY_URL -O /tmp/${FILENAME} && \
+        wget https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}/s6-overlay-noarch.tar.xz -O /tmp/s6-overlay-noarch.tar.xz && \
+        tar -C / -Jxpf /tmp/s6-overlay-noarch.tar.xz && \
         cd /tmp && \
         sha256sum -c ${FILENAME}.sha256 && \
-        tar -xJf ${FILENAME} -C / 
+        tar -C / -Jxpf ${FILENAME} && \
+        mkdir -p /config && \
+        mkdir -p /etc/telly && \
+        chmod +x /usr/bin/telly && \
+        chmod +x /usr/bin/ffmpeg && \
+        rm -rf /tmp/*
 
-COPY s6/ /etc
+COPY s6/ /etc/
 
 EXPOSE 6077
 

@@ -1,0 +1,2 @@
+/config true telly,1000:1000 0644 0700
+/usr/bin/telly true telly,1000:1000 0644 0700

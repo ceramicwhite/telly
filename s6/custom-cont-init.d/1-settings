@@ -1,15 +1,6 @@
 #!/usr/bin/with-contenv bash
 source /etc/env
 
-# Make sure folders exist
-
-mkdir -p /config
-mkdir -p /etc/telly
-
-# Create user and set permissions
-
-adduser --disabled-login --no-create-home --gecos "" telly > /dev/null 2>&1
-
 # Create config file if persist flag is not set or file doesn't exist already
 
 if [ ! -f /config/telly.config.toml ] || [ -z "$PERSISTENCE" ]; then
@@ -68,17 +59,6 @@ EOF
 
 fi
 
-# Fix permissions
-
-groupmod -o -g "$PGID" telly > /dev/null 2>&1
-usermod -o -u "$PUID" telly > /dev/null 2>&1
-
-chown -R telly:telly /config /usr/bin/telly
-
-chmod +x /usr/bin/telly 
-chmod +x /usr/bin/ffmpeg
-
 # Symlink config directory to /etc/telly
 
 ln -sfn /config/* /etc/telly/
-
